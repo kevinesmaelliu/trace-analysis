@@ -173,7 +173,7 @@ export default function TracePanel({ activeStep }) {
   ];
 
   return (
-    <aside className="w-[380px] bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col h-full overflow-hidden">
+    <aside className="w-80 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col h-full overflow-hidden">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full overflow-hidden">
         <TabsList className="w-full rounded-none border-b border-slate-200 dark:border-slate-800 bg-transparent p-0 h-auto">
           <TabsTrigger
