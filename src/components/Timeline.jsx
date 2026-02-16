@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import { Video, MousePointerClick, Play, Pause, SkipBack, SkipForward } from "lucide-react";
+import Scrubber from "./Scrubber";
 
 /**
  * @param {Object} props
@@ -8,7 +10,7 @@ import { useState, useRef, useEffect } from "react";
 function TimelineItem({ icon, isOdd }) {
   return (
     <div
-      className={`${isOdd ? "bg-[#fefefe]" : "bg-white"} relative shrink-0 w-full`}
+      className={`${isOdd ? "bg-[#fefefe]" : "bg-white"} relative shrink-0 w-full flex-1 min-h-0`}
       data-name="lucide/video"
     >
       <div className="flex flex-col justify-center overflow-clip rounded-[inherit] size-full">
@@ -33,24 +35,7 @@ function TimelineItem({ icon, isOdd }) {
 function VideoIcon() {
   return (
     <div className="relative shrink-0 size-[14px]">
-      <div className="absolute inset-[0_-1.19%]">
-        <svg
-          className="block size-full"
-          fill="none"
-          preserveAspectRatio="none"
-          viewBox="0 0 14.3333 14"
-        >
-          <g id="Frame 231">
-            <path
-              d="M2 3C1.44772 3 1 3.44772 1 4V10C1 10.5523 1.44772 11 2 11H12.3333C12.8856 11 13.3333 10.5523 13.3333 10V4C13.3333 3.44772 12.8856 3 12.3333 3H2Z"
-              id="Vector"
-              stroke="var(--stroke-0, black)"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </g>
-        </svg>
-      </div>
+      <Video className="block size-full" size={14} strokeWidth={1.5} />
     </div>
   );
 }
@@ -58,22 +43,7 @@ function VideoIcon() {
 function CursorIcon() {
   return (
     <div className="relative shrink-0 size-[14px]">
-      <svg
-        className="block size-full"
-        fill="none"
-        preserveAspectRatio="none"
-        viewBox="0 0 14 14"
-      >
-        <g id="Frame 232">
-          <path
-            d="M2 2L11 11M11 2L2 11"
-            id="Vector"
-            stroke="var(--stroke-0, black)"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </g>
-      </svg>
+      <MousePointerClick className="block size-full" size={14} strokeWidth={1.5} />
     </div>
   );
 }
@@ -94,6 +64,7 @@ export default function VideoTimeline({
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
   const [zoomLevel, setZoomLevel] = useState(1.0);
   const intervalRef = useRef(null);
+  const timelineStripRef = useRef(null);
 
   const speeds = [0.5, 0.75, 1.0, 1.5, 2.0];
 
@@ -153,11 +124,17 @@ export default function VideoTimeline({
     setZoomLevel((prev) => Math.max(0.5, prev - 0.25));
   };
 
+  const scrubberPosition = duration > 0 ? Math.max(0, Math.min(1, currentTime / duration)) : 0;
+  const handleScrubberPositionChange = (position) => {
+    setCurrentTime(position * duration);
+  };
+
   return (
-    <div className="bg-white relative rounded-lg size-full" data-name="Timeline">
+    <div className="bg-white relative rounded-lg overflow-clip size-full" data-name="Timeline">
       <div className="content-stretch flex flex-col items-center overflow-clip relative rounded-[inherit] size-full h-full">
         {/* Timeline Items */}
         <div
+          ref={timelineStripRef}
           className="bg-[#f9f9f9] content-stretch flex flex-col items-start overflow-x-auto overflow-y-hidden relative shrink-0 w-full flex-1"
           style={{
             transform: `scaleX(${zoomLevel})`,
@@ -166,6 +143,11 @@ export default function VideoTimeline({
         >
           <TimelineItem icon={<VideoIcon />} />
           <TimelineItem icon={<CursorIcon />} isOdd />
+          <Scrubber
+            position={scrubberPosition}
+            onPositionChange={handleScrubberPositionChange}
+            containerRef={timelineStripRef}
+          />
         </div>
 
         {/* Controls */}
@@ -230,54 +212,20 @@ export default function VideoTimeline({
                     className="relative shrink-0 size-[16px] cursor-pointer hover:opacity-70 transition-opacity"
                     aria-label="Skip back 5 seconds"
                   >
-                    <svg
-                      className="block size-full"
-                      fill="none"
-                      preserveAspectRatio="none"
-                      viewBox="0 0 16 16"
-                    >
-                      <path
-                        d="M2 8C2 4.68629 4.68629 2 8 2C11.3137 2 14 4.68629 14 8"
-                        stroke="#6E6E6E"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M4 8L2 6L4 4"
-                        stroke="#6E6E6E"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                    <SkipBack className="block size-full text-[#6E6E6E]" size={16} strokeWidth={2} />
                   </button>
 
-                  {/* Play/Pause */}
+                  {/* Play/Pause: square button (h-7 w-7) so icon centers cleanly; fixed icon size avoids stretch */}
                   <button
                     onClick={handlePlayPause}
-                    className="h-[28.001px] relative shrink-0 w-[25.667px] cursor-pointer hover:opacity-80 transition-opacity"
+                    className="h-7 w-7 cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-center rounded-full bg-black shrink-0"
                     aria-label={isPlaying ? "Pause" : "Play"}
                   >
-                    <svg
-                      className="block size-full"
-                      fill="none"
-                      preserveAspectRatio="none"
-                      viewBox="0 0 25.6675 28.0008"
-                    >
-                      <rect fill="black" height="28.0008" rx="12.8337" width="25.6675" />
-                      {isPlaying ? (
-                        <>
-                          <rect x="9" y="9" width="2" height="10" fill="white" />
-                          <rect x="14.6675" y="9" width="2" height="10" fill="white" />
-                        </>
-                      ) : (
-                        <path
-                          d="M8 6L8 22L19 14Z"
-                          stroke="white"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      )}
-                    </svg>
+                    {isPlaying ? (
+                      <Pause className="text-white shrink-0" size={14} strokeWidth={2.5} fill="white" />
+                    ) : (
+                      <Play className="text-white shrink-0" size={14} strokeWidth={2.5} fill="white" />
+                    )}
                   </button>
 
                   {/* Skip Forward */}
@@ -286,25 +234,7 @@ export default function VideoTimeline({
                     className="relative shrink-0 size-[16px] cursor-pointer hover:opacity-70 transition-opacity"
                     aria-label="Skip forward 5 seconds"
                   >
-                    <svg
-                      className="block size-full"
-                      fill="none"
-                      preserveAspectRatio="none"
-                      viewBox="0 0 16 16"
-                    >
-                      <path
-                        d="M14 8C14 4.68629 11.3137 2 8 2C4.68629 2 2 4.68629 2 8"
-                        stroke="#6E6E6E"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M12 8L14 6L12 4"
-                        stroke="#6E6E6E"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                    <SkipForward className="block size-full text-[#6E6E6E]" size={16} strokeWidth={2} />
                   </button>
                 </div>
 
