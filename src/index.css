@@ -4,7 +4,8 @@
 
 @layer base {
   body {
-    @apply font-display -webkit-font-smoothing antialiased;
+    @apply font-display antialiased;
+    -webkit-font-smoothing: antialiased;
   }
 }
 
