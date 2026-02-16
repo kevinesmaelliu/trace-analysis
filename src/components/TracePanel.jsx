@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Copy, ChevronDown, Eye, Keyboard, Mouse, Zap } from 'lucide-react';
+import { Copy, ChevronDown, Eye, Keyboard, Mouse, Zap, GitBranch, ThumbsUp, ThumbsDown } from 'lucide-react';
 
 function getActionIcon(action) {
   switch (action) {
@@ -47,6 +47,7 @@ function getActionColor(action) {
 export default function TracePanel({ activeStep }) {
   const [activeTab, setActiveTab] = useState('trace');
   const [expandedResponses, setExpandedResponses] = useState({});
+  const [ratings, setRatings] = useState({});
 
   const traces = [
     {
@@ -226,6 +227,18 @@ export default function TracePanel({ activeStep }) {
     }));
   };
 
+  const handleRating = (timestamp, rating) => {
+    setRatings(prev => ({
+      ...prev,
+      [timestamp]: prev[timestamp] === rating ? null : rating
+    }));
+  };
+
+  const handleBranch = (timestamp) => {
+    console.log('Branch from:', timestamp);
+    // TODO: Implement branching logic
+  };
+
   return (
     <aside className="w-[380px] bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col h-full overflow-hidden">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full overflow-hidden">
@@ -265,11 +278,11 @@ export default function TracePanel({ activeStep }) {
                 </span>
               </div>
 
-              {/* Visual Section */}
+              {/* Agent Action Section */}
               <div className={`px-3 py-2 pl-4 border-b border-inherit text-xs text-slate-600 dark:text-slate-300 ${trace.isActive ? '' : 'text-slate-500 dark:text-slate-400'}`}>
                 <div className="font-medium text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-2">
                   <Eye className="w-3 h-3" />
-                  Visual
+                  Agent Action
                 </div>
                 {trace.jsonLog.action && (
                   <div className="mb-2 flex items-center gap-2">
@@ -299,7 +312,7 @@ export default function TracePanel({ activeStep }) {
               </div>
 
               {/* JSON Log Section */}
-              <div className="px-3 py-2 pl-4 bg-slate-950 dark:bg-slate-950 relative">
+              <div className="px-3 py-2 pl-4 bg-slate-950 dark:bg-slate-950 relative border-b border-inherit">
                 <div className="flex items-center justify-between mb-2">
                   <div className="font-medium text-slate-400 text-xs">JSON Log</div>
                   <button
@@ -313,6 +326,43 @@ export default function TracePanel({ activeStep }) {
                 <pre className="text-[10px] font-mono text-emerald-400 overflow-x-auto whitespace-pre-wrap word-break break-word pr-8">
                   {JSON.stringify(trace.jsonLog, null, 2)}
                 </pre>
+              </div>
+
+              {/* Action Buttons Section */}
+              <div className="px-3 py-2 pl-4 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between gap-2">
+                <button
+                  onClick={() => handleBranch(trace.timestamp)}
+                  className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  title="Branch from this point"
+                >
+                  <GitBranch className="w-3 h-3" />
+                  Branch
+                </button>
+
+                <div className="flex items-center gap-1 ml-auto">
+                  <button
+                    onClick={() => handleRating(trace.timestamp, 'up')}
+                    className={`p-1 rounded transition-colors ${
+                      ratings[trace.timestamp] === 'up'
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                    }`}
+                    title="Good response"
+                  >
+                    <ThumbsUp className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleRating(trace.timestamp, 'down')}
+                    className={`p-1 rounded transition-colors ${
+                      ratings[trace.timestamp] === 'down'
+                        ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                    }`}
+                    title="Bad response"
+                  >
+                    <ThumbsDown className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
