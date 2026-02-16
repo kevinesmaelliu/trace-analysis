@@ -25,11 +25,11 @@ export default function App() {
       />
 
       <main className="flex flex-1 overflow-hidden gap-4 p-4">
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-hidden mb-4">
+        <div className="flex-1 flex flex-col overflow-hidden gap-4">
+          <div className="flex-1 min-h-0 overflow-hidden">
             <WorkspaceView />
           </div>
-          <div className="h-32 overflow-hidden shrink-0">
+          <div className="min-h-[176px] overflow-clip shrink-0 rounded-lg">
             <Timeline activeStep={activeStep} setActiveStep={setActiveStep} />
           </div>
         </div>
