@@ -12,7 +12,7 @@ export default function App() {
   const [activeStep, setActiveStep] = useState('10:30:21');
 
   return (
-    <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col overflow-hidden">
+    <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 h-screen flex flex-col overflow-hidden">
       <Header
         selectedRun={selectedRun}
         setSelectedRun={setSelectedRun}
