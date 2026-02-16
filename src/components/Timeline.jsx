@@ -1,6 +1,26 @@
-import { useState, useRef, useEffect } from "react";
-import { Video, MousePointerClick, Play, Pause, SkipBack, SkipForward } from "lucide-react";
+import { useState, useRef, useEffect, useMemo, Fragment } from "react";
+import { Video, MousePointerClick, Play, Pause, SkipBack, SkipForward, Mouse, Keyboard, Eye, Zap } from "lucide-react";
 import Scrubber from "./Scrubber";
+import TimelineNode from "./TimelineNode";
+import { formatTraceTime, TIMELINE_DURATION_SEC } from "@/utils/timeline";
+
+function getActionIcon(action) {
+  switch (action) {
+    case "left_click":
+    case "right_click":
+      return <Mouse className="w-4 h-4" />;
+    case "key":
+    case "type":
+      return <Keyboard className="w-4 h-4" />;
+    case "screenshot":
+      return <Eye className="w-4 h-4" />;
+    default:
+      return <Zap className="w-4 h-4" />;
+  }
+}
+
+/** Fixed width for the left icon column so the timeline track starts after it. */
+const ICON_COLUMN_WIDTH_PX = 52;
 
 /**
  * @param {Object} props
@@ -53,11 +73,21 @@ function CursorIcon() {
  * @param {number} [props.duration=300]
  * @param {string} [props.activeStep]
  * @param {Function} [props.setActiveStep]
+ * @param {number[]} [props.tracePositions] - each trace's position on timeline in seconds (0–duration)
+ * @param {string[]} [props.traceActions] - optional action per trace (e.g. 'left_click', 'key') for agent icons
+ * @param {boolean[]} [props.traceErrors] - optional error flag per trace; when true, top-row node is shown in red
+ * @param {string} [props.selectedTraceTimestamp]
+ * @param {Function} [props.setSelectedTraceTimestamp]
  */
 export default function VideoTimeline({
   duration = 300,
   activeStep,
-  setActiveStep
+  setActiveStep,
+  tracePositions = [],
+  traceActions = [],
+  traceErrors = [],
+  selectedTraceTimestamp,
+  setSelectedTraceTimestamp,
 }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(5);
@@ -65,6 +95,18 @@ export default function VideoTimeline({
   const [zoomLevel, setZoomLevel] = useState(1.0);
   const intervalRef = useRef(null);
   const timelineStripRef = useRef(null);
+
+  const durationSec = duration ?? TIMELINE_DURATION_SEC;
+  const nodeEntries = useMemo(
+    () =>
+      tracePositions.map((seconds, i) => ({
+        position: durationSec > 0 ? Math.max(0, Math.min(1, seconds / durationSec)) : 0,
+        displayTime: formatTraceTime(seconds),
+        icon: getActionIcon(traceActions[i] ?? null),
+        hasError: traceErrors[i] === true,
+      })),
+    [tracePositions, traceActions, traceErrors, durationSec]
+  );
 
   const speeds = [0.5, 0.75, 1.0, 1.5, 2.0];
 
@@ -133,21 +175,61 @@ export default function VideoTimeline({
     <div className="bg-white relative rounded-lg overflow-clip size-full" data-name="Timeline">
       <div className="content-stretch flex flex-col items-center overflow-clip relative rounded-[inherit] size-full h-full">
         {/* Timeline Items */}
-        <div
-          ref={timelineStripRef}
-          className="bg-[#f9f9f9] content-stretch flex flex-col items-start overflow-x-auto overflow-y-hidden relative shrink-0 w-full flex-1"
-          style={{
-            transform: `scaleX(${zoomLevel})`,
-            transformOrigin: "left center",
-          }}
-        >
-          <TimelineItem icon={<VideoIcon />} />
-          <TimelineItem icon={<CursorIcon />} isOdd />
-          <Scrubber
-            position={scrubberPosition}
-            onPositionChange={handleScrubberPositionChange}
-            containerRef={timelineStripRef}
-          />
+        <div className="content-stretch flex flex-row items-stretch overflow-x-auto overflow-y-hidden relative shrink-0 w-full flex-1 rounded-[inherit] border-b border-[#d4d4d4] border-solid">
+          {/* Left column: icons only; timeline track starts after this so scrubber does not overlap. Border-b restores row divider that was on TimelineItem. */}
+          <div
+            className="shrink-0 flex flex-col border-[#e9e9e9] border-r border-solid"
+            style={{ width: ICON_COLUMN_WIDTH_PX }}
+          >
+            <div className="shrink-0 h-[102px] w-full flex flex-col border-[#e3e3e3] border-b border-solid bg-white flex items-center justify-center">
+              <VideoIcon />
+            </div>
+            <div className="shrink-0 h-[102px] w-full flex flex-col bg-[#fefefe] flex items-center justify-center">
+              <CursorIcon />
+            </div>
+          </div>
+          {/* Right column: timeline track with two row containers (white) and divider; nodes + scrubber overlay */}
+          <div
+            ref={timelineStripRef}
+            className="flex-1 min-w-0 relative shrink-0 overflow-hidden rounded-[inherit] flex flex-col"
+            style={{
+              transform: `scaleX(${zoomLevel})`,
+              transformOrigin: "left center",
+              height: 204,
+            }}
+          >
+            {/* Row containers: white backgrounds and line between rows (matches left column row styling) */}
+            <div className="shrink-0 h-[102px] w-full bg-white border-b border-[#e3e3e3] border-solid" />
+            <div className="shrink-0 h-[102px] w-full bg-[#fefefe]" />
+            {/* Node layer: both video (top row) and agent (bottom row) at same positions */}
+            <div className="absolute inset-0 w-full pointer-events-none">
+              <div className="relative w-full h-full pointer-events-auto">
+                {nodeEntries.map(({ position, displayTime, icon, hasError }) => (
+                  <Fragment key={displayTime}>
+                    <TimelineNode
+                      variant="video"
+                      position={position}
+                      color={hasError ? "#dc2626" : "#000000"}
+                      label={displayTime}
+                      displayTime={displayTime}
+                      isSelected={selectedTraceTimestamp === displayTime}
+                      onPreviewClick={() => setSelectedTraceTimestamp?.(displayTime)}
+                    />
+                    <TimelineNode
+                      variant="agent"
+                      position={position}
+                      icon={icon}
+                    />
+                  </Fragment>
+                ))}
+              </div>
+            </div>
+            <Scrubber
+              position={scrubberPosition}
+              onPositionChange={handleScrubberPositionChange}
+              containerRef={timelineStripRef}
+            />
+          </div>
         </div>
 
         {/* Controls */}
