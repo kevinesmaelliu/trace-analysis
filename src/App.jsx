@@ -24,12 +24,18 @@ export default function App() {
         setJob={setJob}
       />
 
-      <main className="flex flex-1 overflow-hidden">
-        <div className="flex-1 flex flex-col p-4 overflow-hidden">
-          <WorkspaceView />
-          <Timeline activeStep={activeStep} setActiveStep={setActiveStep} />
+      <main className="flex flex-1 overflow-hidden gap-4 p-4">
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-hidden mb-4">
+            <WorkspaceView />
+          </div>
+          <div className="h-32 overflow-hidden shrink-0">
+            <Timeline activeStep={activeStep} setActiveStep={setActiveStep} />
+          </div>
         </div>
-        <TracePanel activeStep={activeStep} />
+        <div className="w-80 overflow-y-auto shrink-0">
+          <TracePanel activeStep={activeStep} />
+        </div>
       </main>
     </div>
   );
